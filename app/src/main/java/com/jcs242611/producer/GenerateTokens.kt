@@ -1,6 +1,7 @@
 package com.jcs242611.producer
 
 import android.Manifest
+import android.annotation.SuppressLint
 import android.app.Service
 import android.content.Intent
 import android.content.pm.PackageManager
@@ -38,6 +39,7 @@ class GenerateTokens : Service() {
                     newTokensIntent.setPackage("com.jcs242611.consumer")
                     sendBroadcast(newTokensIntent)
                 }
+
                 Handler(Looper.getMainLooper()).post {
                     Toast.makeText(this@GenerateTokens, "Token: ${token.timestamp}, ${token.latitude}, ${token.longitude}", Toast.LENGTH_LONG).show()
                 }
@@ -75,23 +77,15 @@ class GenerateTokens : Service() {
         return SimpleDateFormat("dd-MM-yyyy'T'HH:mm:ss", Locale.getDefault()).format(Date())
     }
 
+    @SuppressLint("MissingPermission")
     private fun getLocation(): Pair<Double, Double> {
-        if (ActivityCompat.checkSelfPermission(
-                this,
-                Manifest.permission.ACCESS_FINE_LOCATION
-            ) != PackageManager.PERMISSION_GRANTED && ActivityCompat.checkSelfPermission(
-                this,
-                Manifest.permission.ACCESS_COARSE_LOCATION
-            ) != PackageManager.PERMISSION_GRANTED
-        ) {
+        if(locationPermissionNotGranted())
             return Pair(0.0, 0.0)
-        }
 
         var result: Pair<Double, Double>? = null
         val latch = CountDownLatch(1)
         val fusedLocationClient = LocationServices.getFusedLocationProviderClient(this@GenerateTokens)
 
-        // Request the current location asynchronously.
         fusedLocationClient.getCurrentLocation(Priority.PRIORITY_HIGH_ACCURACY, null)
             .addOnSuccessListener { location: Location? ->
                 if (location != null) {
@@ -103,28 +97,13 @@ class GenerateTokens : Service() {
                 latch.countDown()
             }
 
-        // Wait up to 1 second for the location result.
         latch.await(1, TimeUnit.SECONDS)
 
-        // If no location was obtained or result is (0.0, 0.0), fall back to last known location.
-        if (result == null || (result!!.first == 0.0 && result!!.second == 0.0)) {
-            result = getFallbackLocation()
-        }
-        return result ?: Pair(0.0, 0.0)
+        return result ?: getFallbackLocation()
     }
 
+    @SuppressLint("MissingPermission")
     private fun getFallbackLocation(): Pair<Double, Double> {
-        if (ActivityCompat.checkSelfPermission(
-                this,
-                Manifest.permission.ACCESS_FINE_LOCATION
-            ) != PackageManager.PERMISSION_GRANTED && ActivityCompat.checkSelfPermission(
-                this,
-                Manifest.permission.ACCESS_COARSE_LOCATION
-            ) != PackageManager.PERMISSION_GRANTED
-        ) {
-            return Pair(0.0, 0.0)
-        }
-
         val locationManager = getSystemService(LOCATION_SERVICE) as LocationManager
         val location: Location? = locationManager.getLastKnownLocation(LocationManager.GPS_PROVIDER)
 
@@ -135,5 +114,10 @@ class GenerateTokens : Service() {
         CoroutineScope(Dispatchers.IO).launch {
             database.tokenDao().insertToken(token)
         }
+    }
+
+    private fun locationPermissionNotGranted(): Boolean {
+        return (ActivityCompat.checkSelfPermission(this, Manifest.permission.ACCESS_FINE_LOCATION) != PackageManager.PERMISSION_GRANTED
+                && ActivityCompat.checkSelfPermission(this, Manifest.permission.ACCESS_COARSE_LOCATION) != PackageManager.PERMISSION_GRANTED)
     }
 }

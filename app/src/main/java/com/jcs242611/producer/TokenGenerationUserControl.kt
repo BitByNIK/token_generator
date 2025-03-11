@@ -31,6 +31,10 @@ import androidx.core.content.ContextCompat
 import com.jcs242611.producer.ui.theme.ProducerTheme
 
 class TokenGenerationUserControl : ComponentActivity() {
+    override fun onDestroy() {
+        super.onDestroy()
+        ProducerDatabase.getDatabase(applicationContext).close()
+    }
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
