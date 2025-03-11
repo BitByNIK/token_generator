@@ -2,18 +2,25 @@
 <manifest xmlns:android="http://schemas.android.com/apk/res/android"
     xmlns:tools="http://schemas.android.com/tools">
 
+    <permission
+        android:name="com.jcs242611.consumer.READ_TOKENS"
+        android:protectionLevel="normal"/>
+
+    <uses-permission android:name="android.permission.ACCESS_FINE_LOCATION"/>
+    <uses-permission android:name="android.permission.ACCESS_COARSE_LOCATION"/>
+
     <application
         android:allowBackup="true"
         android:dataExtractionRules="@xml/data_extraction_rules"
         android:fullBackupContent="@xml/backup_rules"
-        android:icon="@mipmap/ic_launcher"
+        android:icon="@mipmap/ic_producer"
         android:label="@string/app_name"
-        android:roundIcon="@mipmap/ic_launcher_round"
+        android:roundIcon="@mipmap/ic_producer_round"
         android:supportsRtl="true"
         android:theme="@style/Theme.Producer"
         tools:targetApi="31">
         <activity
-            android:name=".MainActivity"
+            android:name=".TokenGenerationUserControl"
             android:exported="true"
             android:label="@string/app_name"
             android:theme="@style/Theme.Producer">
@@ -24,10 +31,17 @@
             </intent-filter>
         </activity>
         <service
-            android:name=".MyService"
+            android:name=".GenerateTokens"
             android:enabled="true"
             android:exported="false">
         </service>
+        <provider
+            android:authorities="com.jcs242611.producer.provider"
+            android:name=".ProvideTokens"
+            android:exported="true"
+            android:grantUriPermissions="true"
+            android:readPermission="com.jcs242611.consumer.READ_TOKENS">
+        </provider>
     </application>
 
 </manifest>
